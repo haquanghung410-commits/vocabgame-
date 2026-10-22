@@ -1,0 +1,1553 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TRS6 - ĐẤU TRƯỜNG ONLINE ARENA</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- FIREBASE SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+
+    <style>
+        :root {
+            --primary: #6366F1;
+            --cyber-cyan: #06B6D4;
+            --fire-red: #EF4444;
+            --fire-gold: #F59E0B;
+            --bg: #030712;
+            --card-bg: rgba(17, 24, 39, 0.92);
+            --card-border: rgba(255, 255, 255, 0.12);
+            --text-main: #F9FAFB;
+            --text-muted: #9CA3AF;
+            --accent: #10B981;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
+
+        body {
+            background: #030712;
+            background-image:
+                radial-gradient(at 10% 10%, rgba(239, 68, 68, 0.15) 0px, transparent 50%),
+                radial-gradient(at 90% 90%, rgba(245, 158, 11, 0.12) 0px, transparent 50%);
+            color: var(--text-main); min-height: 100vh; display: flex; flex-direction: column; overflow-x: hidden;
+        }
+
+        header {
+            background: rgba(3, 7, 18, 0.88); backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--card-border); padding: 1rem 2rem;
+            display: flex; justify-content: space-between; align-items: center;
+            position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+        }
+        .header-title {
+            font-size: 1.35rem; font-weight: 900;
+            background: linear-gradient(135deg, #EF4444, #F59E0B);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            display: flex; align-items: center; gap: 10px;
+        }
+        .btn-audio-toggle {
+            background: rgba(255, 255, 255, 0.08); border: 1px solid var(--card-border); color: white;
+            padding: 8px 16px; border-radius: 20px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px;
+            transition: all 0.3s;
+        }
+        .btn-audio-toggle:hover { background: rgba(99, 102, 241, 0.2); border-color: var(--primary); }
+
+        .main-container {
+            max-width: 1150px; margin: 1.8rem auto; padding: 0 1.5rem;
+            display: flex; flex-direction: column; width: 100%; flex: 1;
+        }
+
+        .panel-box {
+            background: var(--card-bg); backdrop-filter: blur(16px);
+            border: 1px solid var(--card-border); border-radius: 24px;
+            padding: 2.2rem; display: flex; flex-direction: column; gap: 1.8rem; min-height: 550px;
+            justify-content: flex-start; position: relative; box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+        }
+
+        .btn-action {
+            background: linear-gradient(135deg, var(--fire-red), var(--fire-gold)); color: white; border: none; padding: 14px 28px;
+            border-radius: 14px; font-weight: 800; font-size: 0.95rem; cursor: pointer; display: inline-flex;
+            align-items: center; gap: 10px; justify-content: center; transition: all 0.3s;
+            box-shadow: 0 4px 20px rgba(239, 68, 68, 0.4);
+        }
+        .btn-action:hover { transform: translateY(-3px) scale(1.02); box-shadow: 0 8px 25px rgba(239, 68, 68, 0.6); }
+        .btn-ghost { background: rgba(255,255,255,0.08); border: 1px solid var(--card-border); box-shadow: none; color: white; }
+
+        .feedback-banner {
+            padding: 16px 24px; border-radius: 14px; font-weight: 800; display: none; align-items: center; gap: 14px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5); margin-bottom: 1rem;
+        }
+        .banner-taunt { background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); color: #FCA5A5; }
+        .banner-praise { background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.4); color: #6EE7B7; }
+
+        /* KHUNG CÂU HỎI & CÂU TRẢ LỜI SANG TRỌNG */
+        .question-card-container {
+            background: linear-gradient(145deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.95));
+            border: 2px solid var(--fire-gold); border-radius: 20px; padding: 1.8rem;
+            box-shadow: 0 10px 30px rgba(245, 158, 11, 0.15); margin-bottom: 1rem; text-align: center;
+        }
+        .question-text-title {
+            font-size: 1.4rem; font-weight: 800; color: #FFFFFF; line-height: 1.5;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.5); margin-top: 6px;
+        }
+        .quiz-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; }
+        .quiz-opt {
+            background: rgba(15, 23, 42, 0.85); border: 1.5px solid var(--card-border); color: #F1F5F9; padding: 1.2rem 1.4rem;
+            border-radius: 16px; cursor: pointer; text-align: left; font-size: 1.05rem; font-weight: 700; transition: all 0.25s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3); display: flex; align-items: center; gap: 10px;
+        }
+        .quiz-opt:hover { border-color: var(--fire-gold); background: rgba(245, 158, 11, 0.15); transform: translateY(-3px); box-shadow: 0 8px 20px rgba(245, 158, 11, 0.25); }
+
+        /* ARENA SCREENS */
+        .arena-screen { display: none; flex-direction: column; gap: 1.2rem; align-items: center; justify-content: center; width: 100%; }
+        #arenaRace, #arenaQuiz, #arenaAdmin { align-items: stretch; gap: 1rem; }
+
+        .arena-hero { text-align: center; }
+        .arena-hero-icon { font-size: 3.5rem; filter: drop-shadow(0 0 18px rgba(245, 158, 11, 0.6)); }
+        .arena-hero h2 { font-size: 2.2rem; font-weight: 900; background: linear-gradient(135deg, #fff, #FCD34D); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .arena-hero p { color: var(--text-muted); font-size: 1rem; margin-top: 4px; }
+
+        .arena-box {
+            background: rgba(17, 24, 39, 0.92); border: 2px solid var(--fire-gold); border-radius: 24px; padding: 2.2rem;
+            width: 100%; max-width: 680px; text-align: center; box-shadow: 0 0 40px rgba(245, 158, 11, 0.22); margin-top: 1rem;
+        }
+        .field-label { display: block; text-align: left; font-size: 0.75rem; font-weight: 800; color: var(--text-muted); letter-spacing: 0.07em; text-transform: uppercase; margin-bottom: 6px; }
+        .text-input {
+            width: 100%; background: rgba(3, 7, 18, 0.8); border: 2px solid var(--card-border);
+            border-radius: 14px; padding: 14px 18px; color: white; font-size: 1.1rem; font-weight: 600; outline: none; text-align: center;
+        }
+        .text-input:focus { border-color: var(--fire-gold); }
+        .code-input { letter-spacing: 0.35em; font-weight: 900; text-transform: uppercase; }
+        .btn-full { width: 100%; }
+        .btn-sm { padding: 9px 16px; font-size: 0.82rem; border-radius: 10px; }
+
+        .menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 1.2rem 0; }
+        .menu-card { background: rgba(15, 23, 42, 0.85); border: 1px solid var(--card-border); border-radius: 18px; padding: 1.2rem; display: flex; flex-direction: column; gap: 10px; text-align: left; }
+        .menu-card h3 { font-size: 1.05rem; font-weight: 900; }
+        .menu-card p { font-size: 0.82rem; color: var(--text-muted); flex: 1; }
+        .menu-status { margin-top: 1rem; padding: 10px 14px; border-radius: 12px; font-weight: 700; font-size: 0.9rem; background: rgba(6, 182, 212, 0.12); border: 1px solid rgba(6, 182, 212, 0.35); color: #67E8F9; display: none; }
+        .menu-status.err { background: rgba(239, 68, 68, 0.12); border-color: rgba(239, 68, 68, 0.4); color: #FCA5A5; }
+
+        /* LOBBY */
+        .lobby-wrap { width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 1.2rem; align-items: start; }
+        .lobby-card { background: rgba(17, 24, 39, 0.92); border: 1px solid var(--card-border); border-radius: 22px; padding: 1.4rem; display: flex; flex-direction: column; gap: 1rem; }
+        .code-card { text-align: center; border: 2px solid var(--fire-gold); box-shadow: 0 0 40px rgba(245, 158, 11, 0.2); align-items: center; }
+        .code-label { font-size: 0.75rem; font-weight: 800; letter-spacing: 0.15em; color: var(--text-muted); }
+        .code-value { font-size: 3rem; font-weight: 900; letter-spacing: 0.3em; padding-left: 0.3em; background: linear-gradient(135deg, #FDE68A, #F59E0B, #EF4444); -webkit-background-clip: text; -webkit-text-fill-color: transparent; line-height: 1.1; }
+        .code-hint { font-size: 0.82rem; color: var(--text-muted); }
+        .section-title { font-size: 0.78rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); display: flex; justify-content: space-between; align-items: center; }
+        .players-list { display: flex; flex-direction: column; gap: 8px; max-height: 330px; overflow-y: auto; padding-right: 4px; }
+        .player-card { display: flex; align-items: center; gap: 12px; background: rgba(15, 23, 42, 0.9); border: 1px solid var(--card-border); border-radius: 14px; padding: 10px 14px; }
+        .player-card.is-me { border-color: var(--fire-gold); background: rgba(245, 158, 11, 0.08); }
+        .pc-emoji { font-size: 1.9rem; }
+        .pc-info { flex: 1; min-width: 0; text-align: left; }
+        .pc-name { font-weight: 800; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .pc-tags { display: flex; gap: 6px; margin-top: 3px; flex-wrap: wrap; }
+        .tag { font-size: 0.68rem; font-weight: 800; padding: 2px 8px; border-radius: 20px; }
+        .tag-host { background: rgba(245, 158, 11, 0.18); color: #FCD34D; }
+        .tag-bot { background: rgba(99, 102, 241, 0.2); color: #A5B4FC; }
+        .tag-ok { background: rgba(16, 185, 129, 0.15); color: #6EE7B7; }
+        .tag-admin { background: rgba(6, 182, 212, 0.2); color: #67E8F9; }
+        .pc-kick { background: rgba(239, 68, 68, 0.15); border: none; color: #FCA5A5; width: 28px; height: 28px; border-radius: 50%; cursor: pointer; font-weight: 900; }
+        .pc-kick:hover { background: var(--fire-red); color: #fff; }
+
+        .mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .mode-card { background: rgba(15, 23, 42, 0.9); border: 2px solid var(--card-border); border-radius: 18px; padding: 1rem; cursor: pointer; text-align: left; transition: all 0.25s; }
+        .mode-card:hover:not(.locked) { transform: translateY(-3px); border-color: rgba(245, 158, 11, 0.6); }
+        .mode-card.active { border-color: var(--fire-gold); background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(245, 158, 11, 0.12)); box-shadow: 0 0 24px rgba(245, 158, 11, 0.25); }
+        .mode-card.locked { cursor: default; }
+        .mode-card .mc-ico { font-size: 2rem; }
+        .mode-card .mc-name { font-weight: 900; font-size: 1.05rem; margin: 4px 0; }
+        .mode-card .mc-desc { font-size: 0.78rem; color: var(--text-muted); line-height: 1.45; }
+        .opt-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .opt-row select { width: 100%; background: rgba(3, 7, 18, 0.85); color: #fff; border: 2px solid var(--card-border); border-radius: 12px; padding: 11px 12px; font-weight: 700; font-size: 0.9rem; outline: none; margin-top: 6px; }
+        .opt-row select:disabled { opacity: 0.7; }
+
+        /* 30 CON VẬT - THANH CUỘN ĐẸP */
+        .pet-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; max-height: 200px; overflow-y: auto; padding-right: 4px; }
+        .pet-card { background: rgba(15, 23, 42, 0.8); border: 2px solid var(--card-border); border-radius: 10px; padding: 6px 2px; cursor: pointer; transition: all 0.2s; position: relative; text-align: center; }
+        .pet-card:hover:not(.taken), .pet-card.selected { border-color: var(--fire-gold); background: rgba(245, 158, 11, 0.15); transform: translateY(-2px); }
+        .pet-card.taken { opacity: 0.35; cursor: not-allowed; }
+        .pet-card .pe { font-size: 1.4rem; }
+        .pet-card .pn { font-size: 0.55rem; font-weight: 700; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        .start-hint { font-size: 0.8rem; color: #FCA5A5; font-weight: 700; text-align: center; min-height: 1em; }
+        .wait-note { text-align: center; color: var(--fire-gold); font-weight: 800; padding: 10px; }
+
+        /* MÀN HÌNH QUẢN TRÒ THEO DÕI REAL-TIME */
+        .admin-dashboard { display: flex; flex-direction: column; gap: 1.5rem; width: 100%; }
+        .admin-header { display: flex; justify-content: space-between; align-items: center; background: rgba(15, 23, 42, 0.9); border: 2px solid var(--cyber-cyan); padding: 1.2rem 1.8rem; border-radius: 20px; box-shadow: 0 0 30px rgba(6, 182, 212, 0.2); }
+        .admin-title { font-size: 1.3rem; font-weight: 900; color: var(--cyber-cyan); display: flex; align-items: center; gap: 10px; }
+        
+        .race-track-container { background: rgba(17, 24, 39, 0.95); border: 2px solid var(--fire-gold); border-radius: 18px; padding: 14px 18px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 8px 25px rgba(0,0,0,0.6); }
+        .race-track-header { display: flex; justify-content: space-between; font-size: 0.78rem; font-weight: 900; color: #FFF; gap: 8px; }
+        .race-line-bar { position: relative; width: 100%; height: 180px; background: rgba(3, 7, 18, 0.95); border-radius: 14px; border: 1px solid rgba(255,255,255,0.2); overflow: hidden; }
+        .race-finish-line { position: absolute; right: 45px; top: 0; bottom: 0; width: 16px; background: repeating-linear-gradient(0deg, #fff, #fff 10px, #111 10px, #111 20px); border: 1px solid #F59E0B; z-index: 2; }
+        .race-finish-flag { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 1.5rem; z-index: 3; }
+        .race-racer-row { position: absolute; left: 0; right: 70px; border-bottom: 1px dashed rgba(255, 255, 255, 0.08); }
+        .race-racer-icon { position: absolute; top: 50%; transform: translate(-50%, -50%); font-size: 1.3rem; transition: left 0.45s cubic-bezier(0.34, 1.56, 0.64, 1); z-index: 5; line-height: 1; white-space: nowrap; }
+        .race-racer-icon .rn { position: absolute; left: 100%; top: 50%; transform: translateY(-50%); margin-left: 5px; font-size: 0.62rem; font-weight: 800; color: #CBD5E1; }
+
+        .admin-live-table { background: rgba(15, 23, 42, 0.9); border: 1px solid var(--card-border); border-radius: 20px; padding: 1.5rem; display: flex; flex-direction: column; gap: 10px; }
+        .admin-player-row { display: grid; grid-template-columns: 40px minmax(0, 1fr) 180px 110px; align-items: center; gap: 15px; background: rgba(3, 7, 18, 0.8); border: 1px solid var(--card-border); border-radius: 14px; padding: 12px 18px; }
+        .progress-bar-bg { background: rgba(255,255,255,0.1); height: 12px; border-radius: 10px; overflow: hidden; position: relative; }
+        .progress-bar-fill { background: linear-gradient(90deg, var(--fire-red), var(--fire-gold)); height: 100%; transition: width 0.4s; }
+
+        /* GAME SCREENS */
+        .game-canvas-container {
+            position: relative; width: 100%; aspect-ratio: 1000 / 350; background: linear-gradient(to bottom, #1e1b4b 0%, #0f172a 70%, #020617 100%);
+            border: 2px solid var(--fire-gold); border-radius: 20px; overflow: hidden; box-shadow: 0 15px 35px rgba(245, 158, 11, 0.2);
+        }
+        #gameCanvas { width: 100%; height: 100%; display: block; }
+        .game-hud { position: absolute; top: 12px; left: 16px; right: 16px; display: flex; justify-content: space-between; align-items: center; z-index: 10; pointer-events: none; gap: 8px; flex-wrap: wrap; }
+        .qz-hud { display: flex; gap: 10px; justify-content: space-between; flex-wrap: wrap; }
+        .hud-badge { background: rgba(15, 23, 42, 0.85); border: 1px solid var(--card-border); padding: 6px 14px; border-radius: 30px; font-weight: 800; font-size: 0.9rem; backdrop-filter: blur(8px); }
+
+        .qz-card { background: rgba(17, 24, 39, 0.92); border: 1px solid var(--card-border); border-radius: 22px; padding: 1.6rem; text-align: center; transition: box-shadow 0.3s, border-color 0.3s; }
+        .qz-card.flash-ok { border-color: var(--accent); box-shadow: 0 0 30px rgba(16, 185, 129, 0.45); }
+        .mode-tag { display: inline-block; padding: 7px 16px; border-radius: 20px; font-weight: 800; font-size: 0.85rem; margin-bottom: 14px; background: rgba(245, 158, 11, 0.15); border: 1px solid var(--fire-gold); color: var(--fire-gold); }
+        .penalty-line { margin-top: 14px; font-weight: 800; color: var(--fire-red); font-size: 1.05rem; display: none; }
+        #qz-done { display: none; font-size: 1.4rem; font-weight: 900; color: var(--accent); padding: 1.5rem 0; }
+
+        /* MODALS & FIREWORKS CANVAS FIX */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(3, 7, 18, 0.92); backdrop-filter: blur(15px); display: none; justify-content: center; align-items: center; z-index: 600; }
+        .modal-box { background: rgba(17, 24, 39, 0.97); border: 2px solid var(--fire-gold); border-radius: 24px; padding: 2.2rem; width: 90%; max-width: 580px; max-height: 92vh; overflow-y: auto; text-align: center; box-shadow: 0 0 50px rgba(245, 158, 11, 0.3); position: relative; z-index: 610; }
+        #fireworksCanvas { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 505; display: none; }
+
+        .rank-item { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 12px 18px; background: rgba(15, 23, 42, 0.85); border-radius: 14px; margin-bottom: 10px; border: 1px solid var(--card-border); }
+        .rank-item.top1 { border-color: #F59E0B; background: linear-gradient(135deg, rgba(245, 158, 11, 0.25), rgba(239, 68, 68, 0.15)); box-shadow: 0 0 20px rgba(245, 158, 11, 0.3); }
+        .rank-item.top2 { border-color: #94A3B8; background: rgba(148, 163, 184, 0.15); }
+        .rank-item.top3 { border-color: #D97706; background: rgba(217, 119, 6, 0.15); }
+        .rank-item.me { border-width: 2px; }
+        .rank-stats { font-weight: 800; color: var(--accent); font-size: 0.9rem; white-space: nowrap; }
+        .countdown-num { font-size: 9rem; font-weight: 900; background: linear-gradient(135deg, #FDE68A, #EF4444); -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: cdPop 0.9s ease-out; }
+        @keyframes cdPop { 0% { transform: scale(2.2); opacity: 0; } 35% { transform: scale(1); opacity: 1; } 100% { transform: scale(0.9); opacity: 0.85; } }
+
+        @media (max-width: 850px) {
+            .main-container { padding: 0 1rem; }
+            .quiz-grid { grid-template-columns: 1fr; }
+            .lobby-wrap { grid-template-columns: 1fr; }
+            .menu-grid, .mode-grid, .opt-row { grid-template-columns: 1fr; }
+            .pet-grid { grid-template-columns: repeat(5, 1fr); }
+            .race-track-header span:nth-child(2) { display: none; }
+            .code-value { font-size: 2.3rem; }
+            .admin-player-row { grid-template-columns: 30px minmax(0, 1fr) 100px 70px; font-size: 0.85rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-title">
+            <i class="fa-solid fa-dragon" style="color:var(--fire-gold);"></i> TRS6 - ĐẤU TRƯỜNG ONLINE ARENA
+        </div>
+        <div style="display:flex; align-items:center; gap:15px; flex-wrap:wrap;">
+            <button class="btn-audio-toggle" onclick="toggleMuteAudio()">
+                <i class="fa-solid fa-volume-high" id="audio-icon"></i> <span id="audio-status-text">Âm Thanh: Bật</span>
+            </button>
+        </div>
+    </header>
+
+    <div class="main-container">
+        <!-- Đã bỏ banner cũ gây nảy màn hình -->
+        <main class="panel-box">
+            <!-- 5.1 MENU THAM GIA HOẶC TẠO PHÒNG QUẢN TRÒ -->
+            <div class="arena-screen" id="arenaMenu">
+                <div class="arena-hero">
+                    <div class="arena-hero-icon">⚔️</div>
+                    <h2>ĐẤU ARENA ONLINE (FIREBASE)</h2>
+                    <p>Tạo phòng Quản Trò điều hành hoặc đua top cùng bạn bè!</p>
+                </div>
+                <div class="arena-box">
+                    <label class="field-label" for="playerNameInput">Tên hiển thị của bạn</label>
+                    <input type="text" class="text-input" id="playerNameInput" placeholder="VD: Nhập tên của bạn" maxlength="15" autocomplete="off">
+
+                    <div class="menu-grid">
+                        <div class="menu-card" style="border: 2px solid var(--cyber-cyan); background: rgba(6, 182, 212, 0.08);">
+                            <h3>👑 Tạo phòng Quản trò (Host)</h3>
+                            <p>Đứng ngoài theo dõi tiến độ thi đấu real-time của cả lớp mà không cần thi chạy!</p>
+                            <button class="btn-action btn-full" style="background: linear-gradient(135deg, var(--cyber-cyan), #3B82F6);" onclick="fbCreateRoom(false, true)"><i class="fa-solid fa-crown"></i> Tạo phòng Host theo dõi</button>
+                        </div>
+                        <div class="menu-card">
+                            <h3>🔑 Vào phòng thi đấu</h3>
+                            <input type="text" class="text-input code-input" id="roomCodeInput" placeholder="MÃ PHÒNG" maxlength="5" autocomplete="off" spellcheck="false">
+                            <button class="btn-action btn-full" onclick="fbJoinRoom()"><i class="fa-solid fa-right-to-bracket"></i> Vào phòng</button>
+                        </div>
+                    </div>
+
+                    <div style="display:flex; gap:10px;">
+                        <button class="btn-action btn-ghost btn-full" style="flex:1;" onclick="fbCreateRoom(false, false)"><i class="fa-solid fa-gamepad"></i> Tạo phòng tự thi đấu</button>
+                        <button class="btn-action btn-ghost btn-full" style="flex:1;" onclick="fbCreateRoom(true, false)"><i class="fa-solid fa-robot"></i> Chơi Solo với Bot</button>
+                    </div>
+                    <div class="menu-status" id="menuStatus"></div>
+                </div>
+            </div>
+
+            <!-- 5.2 SẢNH CHỜ LOBBY -->
+            <div class="arena-screen" id="arenaLobby">
+                <div class="lobby-wrap">
+                    <div style="display:flex; flex-direction:column; gap:1.2rem; min-width:0;">
+                        <div class="lobby-card code-card">
+                            <div class="code-label">MÃ PHÒNG TIẾN TRÌNH</div>
+                            <div class="code-value" id="lobbyCode">-----</div>
+                            <button class="btn-action btn-ghost btn-sm" id="btnCopyCode" onclick="copyRoomCode()"><i class="fa-solid fa-copy"></i> Sao chép mã</button>
+                            <div class="code-hint" id="lobbyHint"></div>
+                        </div>
+                        <div class="lobby-card">
+                            <div class="section-title"><span>Người chơi trong phòng</span><b id="lobbyCount">1/30</b></div>
+                            <div class="players-list" id="playersListGrid"></div>
+                            <button class="btn-action btn-ghost btn-sm btn-full" id="btnAddBot" onclick="fbAddBot()"><i class="fa-solid fa-robot"></i> Thêm Bot Luyện Tập</button>
+                        </div>
+                    </div>
+
+                    <div style="display:flex; flex-direction:column; gap:1.2rem; min-width:0;">
+                        <div class="lobby-card">
+                            <div class="section-title"><span>Chế độ chơi</span></div>
+                            <div class="mode-grid">
+                                <div class="mode-card" id="modeCard-quiz" onclick="fbSetMode('quiz')">
+                                    <div class="mc-ico">🧠</div>
+                                    <div class="mc-name">Đấu Trí</div>
+                                    <div class="mc-desc">Cả phòng làm chung bộ câu hỏi. Ai hoàn thành nhanh và đúng nhất sẽ thắng!</div>
+                                </div>
+                                <div class="mode-card" id="modeCard-race" onclick="fbSetMode('race')">
+                                    <div class="mc-ico">🏃</div>
+                                    <div class="mc-name">Đua Runner</div>
+                                    <div class="mc-desc">Chạy né chướng ngại vật, ăn Nấm 🍄 (X2 điểm) & Ngôi Sao 🌟 (+50đ)!</div>
+                                </div>
+                            </div>
+                            <div class="opt-row">
+                                <div><div class="section-title"><span>Bộ câu hỏi</span></div><select id="setSelect" onchange="fbSetSet(this.value)"></select></div>
+                                <div><div class="section-title"><span>Độ khó Bot</span></div><select id="botSelect" onchange="fbSetBot(this.value)"></select></div>
+                            </div>
+                        </div>
+
+                        <div class="lobby-card" id="petSelectCard">
+                            <div class="section-title"><span>Chọn 1 trong 30 Linh vật của bạn</span></div>
+                            <div class="pet-grid" id="petGrid"></div>
+                        </div>
+
+                        <div class="lobby-card" style="gap:10px;">
+                            <button class="btn-action btn-full" id="btnStart" style="padding:18px; font-size:1.05rem;" onclick="fbHostStart()"><i class="fa-solid fa-play"></i> Bắt Đầu Trận Đấu</button>
+                            <div class="start-hint" id="startHint"></div>
+                            <div class="wait-note" id="lobbyWait" style="display:none;"><i class="fa-solid fa-hourglass-half"></i> Đang chờ chủ phòng bắt đầu...</div>
+                            <button class="btn-action btn-ghost btn-sm btn-full" onclick="leaveRoomUI()"><i class="fa-solid fa-door-open"></i> Rời phòng</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 5.3 MÀN HÌNH QUẢN TRÒ THEO DÕI REAL-TIME -->
+            <div class="arena-screen" id="arenaAdmin">
+                <div class="admin-dashboard">
+                    <div class="admin-header">
+                        <div class="admin-title">
+                            <i class="fa-solid fa-desktop" style="color:var(--cyber-cyan);"></i> MÀN HÌNH QUẢN TRÒ (THEO DÕI REAL-TIME)
+                        </div>
+                        <button class="btn-action" style="padding:10px 20px; font-size:0.88rem;" onclick="fbHostForceEnd()">
+                            <i class="fa-solid fa-stop"></i> Kết Thúc Trận Đấu
+                        </button>
+                    </div>
+
+                    <div class="race-track-container">
+                        <div class="race-track-header">
+                            <span>🏁 XUẤT PHÁT</span>
+                            <span style="color:var(--fire-gold);">⚡ LỘ TRÌNH DI CHUYỂN CỦA MỌI NGƯỜI CHƠI REAL-TIME</span>
+                            <span>ĐÍCH 🚩</span>
+                        </div>
+                        <div class="race-line-bar" id="laneBarAdmin">
+                            <div class="race-finish-line"></div>
+                            <div class="race-finish-flag">🏁</div>
+                        </div>
+                    </div>
+
+                    <div class="admin-live-table">
+                        <div class="section-title" style="margin-bottom:8px;"><span>BẢNG THEO DÕI TIẾN ĐỘ THỰC TẾ CHI TIẾT</span></div>
+                        <div id="adminPlayerTable" style="display:flex; flex-direction:column; gap:10px;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 5.4 CHẾ ĐỘ ĐUA RUNNER -->
+            <div class="arena-screen" id="arenaRace">
+                <div class="game-canvas-container">
+                    <div class="game-hud">
+                        <div class="hud-badge" style="color:var(--fire-gold);"><i class="fa-solid fa-flag-checkered"></i> <span id="hud-progress">0 / 15 câu</span></div>
+                        <div class="hud-badge" style="color:#FCD34D;"><i class="fa-solid fa-ranking-star"></i> Hạng <span id="hud-rank">#1</span></div>
+                        <div class="hud-badge" style="color:var(--accent);"><i class="fa-solid fa-star"></i> <span id="hud-score">0 đ</span></div>
+                        <div class="hud-badge" id="hud-buff" style="color:#F43F5E; display:none;"><i class="fa-solid fa-bolt"></i> <span>🍄 BUFF X2 ĐIỂM</span></div>
+                    </div>
+                    <canvas id="gameCanvas" width="1000" height="350"></canvas>
+                </div>
+                <div class="race-track-container">
+                    <div class="race-track-header"><span>🏁 XUẤT PHÁT</span><span style="color:var(--fire-gold);">⚡ ĐƯỜNG ĐUA TRỰC TIẾP</span><span>ĐÍCH 🚩</span></div>
+                    <div class="race-line-bar" id="laneBarRace">
+                        <div class="race-finish-line"></div>
+                        <div class="race-finish-flag">🏁</div>
+                    </div>
+                </div>
+                <div class="help-line">⚡ <b>SPACE / ↑</b> để Nhảy | <b>↓</b> để Cúi | 🍄 Nấm (X2 điểm) | 🌟 Ngôi sao (+50đ bonus)!</div>
+            </div>
+
+            <!-- 5.5 CHẾ ĐỘ ĐẤU TRÍ (KHUNG CÂU HỎI & ĐÁP ÁN ĐẸP RÕ RÀNG) -->
+            <div class="arena-screen" id="arenaQuiz">
+                <div class="qz-hud">
+                    <div class="hud-badge" style="color:var(--fire-gold);"><i class="fa-solid fa-list-check"></i> <span id="qz-count">Câu 1/15</span></div>
+                    <div class="hud-badge" style="color:var(--cyber-cyan);"><i class="fa-solid fa-stopwatch"></i> <span id="qz-time">0.0s</span></div>
+                    <div class="hud-badge" style="color:var(--accent);"><i class="fa-solid fa-star"></i> <span id="qz-score">0 đ</span></div>
+                    <div class="hud-badge" style="color:#FCD34D;"><i class="fa-solid fa-ranking-star"></i> Hạng <span id="qz-rank">#1</span></div>
+                </div>
+                <div class="race-track-container">
+                    <div class="race-track-header"><span>🏁 XUẤT PHÁT</span><span style="color:var(--fire-gold);">⚡ TIẾN ĐỘ CỦA CẢ PHÒNG</span><span>HOÀN THÀNH 🚩</span></div>
+                    <div class="race-line-bar" id="laneBarQuiz">
+                        <div class="race-finish-line"></div>
+                        <div class="race-finish-flag">🏁</div>
+                    </div>
+                </div>
+                <div class="qz-card" id="qz-card">
+                    <div id="qz-body">
+                        <div class="mode-tag" id="qz-mode-tag">📝 CÂU HỎI ÔN TẬP</div>
+                        <div class="question-card-container">
+                            <div class="question-text-title" id="qz-word">Question text</div>
+                        </div>
+                        <div class="quiz-grid" id="qz-options"></div>
+                        <div class="penalty-line" id="qz-penalty">⚠️ Sai rồi! Bị khóa <span id="qz-penalty-sec">3</span> giây rồi làm lại câu này!</div>
+                    </div>
+                    <div id="qz-done">🏁 Bạn đã hoàn thành! Đang chờ kết quả...</div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- ĐẾM NGƯỢC -->
+    <div class="modal-overlay" id="countdownModal" style="z-index:700;">
+        <div class="countdown-num" id="countdownNum">3</div>
+    </div>
+
+    <!-- POPUP CẤU HỎI KHI ĐỤNG CHƯỚNG NGẠI VẬT -->
+    <div class="modal-overlay" id="questionModal" style="z-index:650;">
+        <div class="modal-box">
+            <div style="font-size:0.85rem; font-weight:800; color:var(--fire-gold); margin-bottom:10px;" id="q-step-tag">CÂU HỎI CẤP CỨU</div>
+            <div id="q-quiz-view">
+                <div class="question-card-container" style="padding:1.2rem; margin-bottom:1rem;">
+                    <div class="question-text-title" id="q-word-title" style="font-size:1.2rem;">Question text</div>
+                </div>
+                <div class="quiz-grid" id="q-quiz-options"></div>
+            </div>
+            <div id="penalty-notice" style="display:none; margin-top:15px; font-weight:800; color:var(--fire-red); font-size:1.1rem;">
+                ⚠️ Trả lời sai! Bị khóa <span id="countdownTimer">5</span> giây và đổi câu hỏi mới!
+            </div>
+        </div>
+    </div>
+
+    <!-- POPUP BẢNG CHUNG CUỘC & PHÁO HOA -->
+    <canvas id="fireworksCanvas"></canvas>
+    <div class="modal-overlay" id="leaderboardModal" style="z-index:600;">
+        <div class="modal-box">
+            <div style="font-size:4rem; margin-bottom:6px;" id="rankBadgeIcon">🏆</div>
+            <h2 style="font-size:2rem; font-weight:900; color:var(--accent); margin-bottom:4px;">BẢNG CHUNG CUỘC</h2>
+            <p style="color:var(--fire-gold); font-size:1rem; margin-bottom:4px; font-weight:800;" id="rankSubtitleText"></p>
+            <p style="color:var(--text-muted); font-size:0.8rem; margin-bottom:14px; font-weight:700;" id="rankModeLine"></p>
+            <div id="rankList" style="margin-bottom:1.2rem; max-height:280px; overflow-y:auto;"></div>
+            <div id="resHostBtns" style="display:flex; gap:10px; flex-wrap:wrap;">
+                <button class="btn-action btn-ghost" style="flex:1;" onclick="fbHostBackToLobby(false)"><i class="fa-solid fa-house"></i> Về Phòng Chờ</button>
+                <button class="btn-action" style="flex:1;" onclick="fbHostBackToLobby(true)"><i class="fa-solid fa-rotate-right"></i> Đấu Lại Ngay</button>
+            </div>
+            <div id="resGuestBtns" style="display:none;">
+                <div class="wait-note"><i class="fa-solid fa-hourglass-half"></i> Đang chờ chủ phòng...</div>
+                <button class="btn-action btn-ghost btn-full" onclick="leaveRoomUI()"><i class="fa-solid fa-door-open"></i> Rời phòng</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ÂM THANH -->
+    <audio id="audio-clap" src="clap.mp3" preload="auto"></audio>
+    <audio id="audio-laugh" src="laugh.mp3" preload="auto"></audio>
+    <audio id="audio-win" src="win.mp3" preload="auto"></audio>
+    <audio id="audio-lobby" src="lobby.mp3" preload="auto" loop></audio>
+    <audio id="audio-bgm" src="bgm.mp3" preload="auto" loop></audio>
+    <audio id="audio-champion" src="champion.mp3" preload="auto"></audio>
+    <audio id="audio-normal" src="normal.mp3" preload="auto"></audio>
+    <audio id="audio-skibidi" src="skibidi.mp3" preload="auto"></audio>
+
+    <script>
+        // ======================= DỮ LIỆU 30 CÂU HỎI ONLINE SHOPPING =======================
+        const rawVocabData = [
+            { id: 1, word: "What is one major advantage of online shopping?", type: "(MC)", meaning: "Greater convenience", day: 1, session: 1 },
+            { id: 2, word: "What is a major challenge for traditional markets?", type: "(MC)", meaning: "Increasing online competition", day: 1, session: 1 },
+            { id: 3, word: "Why do many customers prefer online shopping?", type: "(MC)", meaning: "Shop anytime and anywhere", day: 1, session: 1 },
+            { id: 4, word: "Which platform can help traditional sellers promote their products?", type: "(MC)", meaning: "TikTok", day: 1, session: 1 },
+            { id: 5, word: "What can traditional sellers do to attract more customers?", type: "(MC)", meaning: "Improve customer service", day: 1, session: 1 },
+            { id: 6, word: "What is e-commerce?", type: "(MC)", meaning: "Buying and selling products online", day: 1, session: 1 },
+            { id: 7, word: "What is one risk of online shopping?", type: "(MC)", meaning: "Products may not match descriptions", day: 1, session: 1 },
+            { id: 8, word: "How can technology benefit traditional businesses?", type: "(MC)", meaning: "Helping them reach more customers", day: 1, session: 1 },
+            { id: 9, word: "What does free delivery often encourage customers to do?", type: "(MC)", meaning: "Shop online", day: 1, session: 1 },
+            { id: 10, word: "Which strategy can help traditional markets survive?", type: "(MC)", meaning: "Combining online and offline sales", day: 1, session: 1 },
+            { id: 11, word: "Online shopping is convenient. (Synonym of convenient)", type: "(Syn)", meaning: "Easy", day: 1, session: 1 },
+            { id: 12, word: "Traditional sellers face strong competition. (Synonym of competition)", type: "(Syn)", meaning: "Rivalry", day: 1, session: 1 },
+            { id: 13, word: "Online platforms provide many opportunities. (Synonym of opportunities)", type: "(Syn)", meaning: "Chances", day: 1, session: 1 },
+            { id: 14, word: "Businesses want to increase their sales. (Synonym of increase)", type: "(Syn)", meaning: "Raise", day: 1, session: 1 },
+            { id: 15, word: "Sellers use social media to promote products. (Synonym of promote)", type: "(Syn)", meaning: "Advertise", day: 1, session: 1 },
+            { id: 16, word: "Customers expect high product quality. (Synonym of quality)", type: "(Syn)", meaning: "Standard", day: 1, session: 2 },
+            { id: 17, word: "Traditional businesses must adapt to technological changes. (Synonym of adapt)", type: "(Syn)", meaning: "Adjust", day: 1, session: 2 },
+            { id: 18, word: "Online shopping can reduce the time needed. (Synonym of reduce)", type: "(Syn)", meaning: "Decrease", day: 1, session: 2 },
+            { id: 19, word: "Good customer service improves customer satisfaction. (Synonym of satisfaction)", type: "(Syn)", meaning: "Happiness", day: 1, session: 2 },
+            { id: 20, word: "Traditional markets face many challenges. (Synonym of challenges)", type: "(Syn)", meaning: "Difficulties", day: 1, session: 2 },
+            { id: 21, word: "Online shopping allows customers to purchase without visiting physical stores.", type: "(T/F)", meaning: "True", day: 1, session: 2 },
+            { id: 22, word: "Customers can always examine physical quality before buying online.", type: "(T/F)", meaning: "False", day: 1, session: 2 },
+            { id: 23, word: "Social media can help traditional sellers advertise their products.", type: "(T/F)", meaning: "True", day: 1, session: 2 },
+            { id: 24, word: "Online shopping creates no competition for traditional markets.", type: "(T/F)", meaning: "False", day: 1, session: 2 },
+            { id: 25, word: "Traditional sellers can use technology to reach potential customers.", type: "(T/F)", meaning: "True", day: 1, session: 2 },
+            { id: 26, word: "Online shopping has become popular because of its digital convenience...", type: "(Fill)", meaning: "Greater convenience", day: 1, session: 2 },
+            { id: 27, word: "Sellers struggle to maintain sales because of growing online...", type: "(Fill)", meaning: "Competition", day: 1, session: 2 },
+            { id: 28, word: "Customers lose trust if products do not match advertised...", type: "(Fill)", meaning: "Descriptions", day: 1, session: 2 },
+            { id: 29, word: "Traditional sellers can expand customer base by adopting digital marketing...", type: "(Fill)", meaning: "Strategies", day: 1, session: 2 },
+            { id: 30, word: "Combining physical stores with online platforms achieves long-term...", type: "(Fill)", meaning: "Success", day: 1, session: 2 }
+        ];
+
+        // ======================= CẤU HÌNH FIREBASE =======================
+        const firebaseConfig = { 
+            databaseURL: "https://trs6-vocab-arena-default-rtdb.asia-southeast1.firebasedatabase.app" 
+        };
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        const rtdb = firebase.database();
+
+        let isMuted = false;
+
+        function $(id) { return document.getElementById(id); }
+        function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+        function shuffle(arr) {
+            const a = arr.slice();
+            for (let i = a.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [a[i], a[j]] = [a[j], a[i]];
+            }
+            return a;
+        }
+
+        function buildOptions(container, correct, pool, onPick) {
+            const opts = [correct];
+            let guard = 0;
+            while (opts.length < 4 && guard++ < 500) {
+                const r = pool[Math.floor(Math.random() * pool.length)];
+                if (!opts.includes(r)) opts.push(r);
+            }
+            container.innerHTML = '';
+            shuffle(opts).forEach((o, idx) => {
+                const btn = document.createElement('button');
+                btn.className = 'quiz-opt';
+                btn.innerHTML = `<span style="color:var(--fire-gold); font-weight:900;">${String.fromCharCode(65 + idx)}.</span> ${esc(o)}`;
+                btn.addEventListener('click', () => onPick(o === correct));
+                container.appendChild(btn);
+            });
+        }
+        const allMeanings = () => rawVocabData.map(w => w.meaning);
+
+        // ======================= ÂM THANH =======================
+        const EFFECT_IDS = ['clap', 'laugh', 'win'];
+        const ENDING_IDS = ['champion', 'normal', 'skibidi', 'win'];
+        const MUSIC_IDS = ['lobby', 'bgm'];
+        let currentMusic = null;
+        let currentEnding = null;
+
+        function stopAllEffectAudios() {
+            EFFECT_IDS.forEach(t => { const a = $('audio-' + t); if (a) { a.pause(); a.currentTime = 0; } });
+        }
+        function stopEndingAudio() {
+            ENDING_IDS.forEach(t => { const a = $('audio-' + t); if (a) { a.pause(); a.currentTime = 0; } });
+            currentEnding = null;
+        }
+        function setMusic(name) {
+            currentMusic = name;
+            MUSIC_IDS.forEach(t => { if (t !== name) { const a = $('audio-' + t); a.pause(); } });
+            if (name && !isMuted) {
+                const a = $('audio-' + name);
+                a.play().catch(() => {});
+            }
+        }
+        function playEnding(name) {
+            stopEndingAudio();
+            if (isMuted) return;
+            currentEnding = name;
+            const a = $('audio-' + name);
+            if (a) { a.currentTime = 0; a.play().catch(() => {}); }
+        }
+        function toggleMuteAudio() {
+            isMuted = !isMuted;
+            const icon = $('audio-icon'), text = $('audio-status-text');
+            if (isMuted) {
+                icon.className = 'fa-solid fa-volume-xmark';
+                text.innerText = 'Âm Thanh: Tắt';
+                stopAllEffectAudios();
+                stopEndingAudio();
+                MUSIC_IDS.forEach(t => $('audio-' + t).pause());
+            } else {
+                icon.className = 'fa-solid fa-volume-high';
+                text.innerText = 'Âm Thanh: Bật';
+                setMusic(currentMusic);
+            }
+        }
+        function playSoundFile(type) {
+            if (isMuted) return;
+            stopAllEffectAudios();
+            const audio = $('audio-' + type);
+            if (audio) { audio.currentTime = 0; audio.play().catch(() => {}); }
+        }
+        function triggerBanner(isCorrect, customText = '') {
+            const taunt = $('taunt-banner'), praise = $('praise-banner');
+            taunt.style.display = 'none'; praise.style.display = 'none';
+            if (isCorrect) {
+                playSoundFile('clap'); praise.style.display = 'flex';
+                $('praise-text').innerText = customText || "Quá đỉnh! Chuẩn xác!";
+            } else {
+                playSoundFile('laugh'); taunt.style.display = 'flex';
+                $('taunt-text').innerText = customText || "Sai rồi Hưng ơi! Gà quá!";
+            }
+            setTimeout(() => { taunt.style.display = 'none'; praise.style.display = 'none'; }, 2000);
+        }
+
+        // ======================= HIỆU ỨNG PHÁO HOA CANVAS =======================
+        const fwCanvas = $('fireworksCanvas');
+        const fwCtx = fwCanvas.getContext('2d');
+        let fireworks = [], particles = [], fwAnimationId = null;
+
+        function resizeFwCanvas() { fwCanvas.width = window.innerWidth; fwCanvas.height = window.innerHeight; }
+        window.addEventListener('resize', resizeFwCanvas);
+        resizeFwCanvas();
+
+        function createFirework() {
+            const x = Math.random() * fwCanvas.width;
+            const targetY = Math.random() * (fwCanvas.height * 0.5);
+            fireworks.push({ x, y: fwCanvas.height, targetY, speed: 8 + Math.random() * 4, color: `hsl(${Math.random() * 360}, 100%, 60%)` });
+        }
+
+        function explodeFirework(x, y, color) {
+            for (let i = 0; i < 40; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * 5 + 2;
+                particles.push({
+                    x, y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
+                    alpha: 1, color, decay: Math.random() * 0.02 + 0.015
+                });
+            }
+        }
+
+        function animateFireworks() {
+            fwCtx.clearRect(0, 0, fwCanvas.width, fwCanvas.height);
+
+            if (Math.random() < 0.08) createFirework();
+
+            for (let i = fireworks.length - 1; i >= 0; i--) {
+                const fw = fireworks[i];
+                fw.y -= fw.speed;
+                fwCtx.fillStyle = fw.color;
+                fwCtx.beginPath(); fwCtx.arc(fw.x, fw.y, 3, 0, Math.PI * 2); fwCtx.fill();
+
+                if (fw.y <= fw.targetY) {
+                    explodeFirework(fw.x, fw.y, fw.color);
+                    fireworks.splice(i, 1);
+                }
+            }
+
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx; p.y += p.vy; p.vy += 0.08; p.alpha -= p.decay;
+                fwCtx.globalAlpha = Math.max(0, p.alpha);
+                fwCtx.fillStyle = p.color;
+                fwCtx.beginPath(); fwCtx.arc(p.x, p.y, 2.5, 0, Math.PI * 2); fwCtx.fill();
+                fwCtx.globalAlpha = 1;
+
+                if (p.alpha <= 0) particles.splice(i, 1);
+            }
+            fwAnimationId = requestAnimationFrame(animateFireworks);
+        }
+
+        function startFireworks() {
+            fireworks = []; particles = [];
+            fwCanvas.style.display = 'block';
+            if (fwAnimationId) cancelAnimationFrame(fwAnimationId);
+            animateFireworks();
+        }
+
+        function stopFireworks() {
+            if (fwAnimationId) cancelAnimationFrame(fwAnimationId);
+            fwCtx.clearRect(0, 0, fwCanvas.width, fwCanvas.height);
+            fwCanvas.style.display = 'none';
+        }
+
+        // ======================= ĐẤU ARENA (FIREBASE BACKEND) =======================
+        const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        const MAX_PLAYERS = 30;
+        
+        const petsList = [
+            { id: 1, name: "Thỏ Hồng", emoji: "🐰" }, { id: 2, name: "Gà Vàng", emoji: "🐣" },
+            { id: 3, name: "Cá Sấu", emoji: "🐊" }, { id: 4, name: "Cáo Cam", emoji: "🦊" },
+            { id: 5, name: "Gấu Nâu", emoji: "🐻" }, { id: 6, name: "Mèo Tím", emoji: "🐱" },
+            { id: 7, name: "Cún Xanh", emoji: "🐶" }, { id: 8, name: "Gấu Trúc", emoji: "🐼" },
+            { id: 9, name: "Sư Tử", emoji: "🦁" }, { id: 10, name: "Ếch Xanh", emoji: "🐸" },
+            { id: 11, name: "Hổ Vằn", emoji: "🐯" }, { id: 12, name: "Khỉ Tinh", emoji: "🐵" },
+            { id: 13, name: "Koala", emoji: "🐨" }, { id: 14, name: "Bò Sữa", emoji: "🐮" },
+            { id: 15, name: "Lợn Hồng", emoji: "🐷" }, { id: 16, name: "Kỳ Lân", emoji: "🦄" },
+            { id: 17, name: "Rồng Lửa", emoji: "🐲" }, { id: 18, name: "Cánh Cụt", emoji: "🐧" },
+            { id: 19, name: "Cú Thông", emoji: "🦉" }, { id: 20, name: "Rùa Xanh", emoji: "🐢" },
+            { id: 21, name: "Bạch Tuộc", emoji: "🐙" }, { id: 22, name: "Cua Đỏ", emoji: "🦀" },
+            { id: 23, name: "Cá Heo", emoji: "🐬" }, { id: 24, name: "Cá Voi", emoji: "🐳" },
+            { id: 25, name: "Bướm Xinh", emoji: "🦋" }, { id: 26, name: "Ong Mật", emoji: "🐝" },
+            { id: 27, name: "Bọ Rùa", emoji: "🐞" }, { id: 28, name: "Dơi Đêm", emoji: "🦇" },
+            { id: 29, name: "Lười Chăm", emoji: "🦥" }, { id: 30, name: "Chuột Túi", emoji: "🦘" }
+        ];
+
+        const botNamesPool = ["An Đen", "Bảo Pro", "Chi Lee", "Dũng Ngơ", "Hải Đăng", "Khánh Vy", "Minh Tú", "Nam Phong", "Quỳnh Anh", "Tuấn Kiệt"];
+        const ARENA_SCREENS = ['arenaMenu', 'arenaLobby', 'arenaRace', 'arenaQuiz', 'arenaAdmin'];
+        const BOT_LEVELS = {
+            easy:   { label: 'Dễ',  lo: 0.06, hi: 0.10 },
+            normal: { label: 'Vừa', lo: 0.09, hi: 0.14 },
+            hard:   { label: 'Khó', lo: 0.13, hi: 0.20 }
+        };
+        const MODE_NAMES = { quiz: '🧠 Đấu Trí', race: '🏃 Đua Runner' };
+
+        let fbState = { active: false, isHost: false, code: '', myId: '', roomId: '', isSpectator: false };
+        let roomData = { players: {}, mode: 'quiz', setKey: 'session1', setLabel: '', botLevel: 'normal', phase: 'lobby', wordIds: [] };
+        let match = { words: [], total: 0, running: false, finished: false };
+        let arenaScreen = 'arenaMenu';
+        let fbRef = null, fbListeners = [];
+        let botTimer = null, countdownTimer = null;
+
+        let score = 0, wordsCompleted = 0;
+        let gameSpeed = 3.8, frameCount = 0, invincibleFrames = 0;
+        let obstacles = [], isGameRunning = false;
+        let floatingTexts = []; // Mảng chứa chữ nổi neon vàng bay lên trên đầu nhân vật
+        let isPenalized = false, penaltyTimer = null, rafId = null;
+        let wordQueue = [], qWordObj = null;
+        let hasMushroomBuff = false;
+        const qz = { idx: 0, locked: false, startTs: 0, timer: null, penaltyTimer: null };
+
+        const player = { x: 100, y: 255, width: 45, height: 55, originalHeight: 55, velocityY: 0, gravity: 0.55, isJumping: false, isDucking: false };
+        const canvas = $('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        function genCode() { let c = ''; for (let i = 0; i < 5; i++) c += CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)]; return c; }
+        function playersArray() { return Object.values(roomData.players || {}); }
+        function getMyPlayer() { return roomData.players ? roomData.players[fbState.myId] : null; }
+        function rankCompare(a, b) {
+            const fa = a.finishOrder || 999, fb = b.finishOrder || 999;
+            if (fa !== fb) return fa - fb;
+            if (b.progress !== a.progress) return b.progress - a.progress;
+            return b.score - a.score;
+        }
+        function setMenuStatus(msg, isErr) {
+            const el = $('menuStatus');
+            el.innerText = msg || '';
+            el.className = 'menu-status' + (isErr ? ' err' : '');
+            el.style.display = msg ? 'block' : 'none';
+        }
+        function showArenaScreen(id) {
+            arenaScreen = id;
+            ARENA_SCREENS.forEach(s => { $(s).style.display = (s === id) ? 'flex' : 'none'; });
+        }
+        function setOptions() {
+            return [
+                { key: 'session1', label: `Ca 1 (15 câu đầu)` },
+                { key: 'session2', label: `Ca 2 (15 câu sau)` },
+                { key: 'all30', label: `Toàn bộ 30 câu hỏi` },
+                { key: 'mix20', label: 'Ngẫu nhiên 20 câu' }
+            ];
+        }
+        function setLabelFor(key) { const o = setOptions().find(x => x.key === key); return o ? o.label : key; }
+        function wordsForSet(key) {
+            if (key === 'session1') return rawVocabData.filter(w => w.session === 1);
+            if (key === 'session2') return rawVocabData.filter(w => w.session === 2);
+            if (key === 'all30') return rawVocabData.slice();
+            return shuffle(rawVocabData).slice(0, 20);
+        }
+
+        function readName() {
+            const v = $('playerNameInput').value.trim();
+            if (!v) { setMenuStatus('Vui lòng nhập tên của bạn trước nhé!', true); $('playerNameInput').focus(); return null; }
+            try { localStorage.setItem('trs6_player_name', v); } catch (e) {}
+            return v;
+        }
+
+        function clearListeners() {
+            if (fbRef && fbListeners.length) {
+                fbListeners.forEach(([path, ev, cb]) => fbRef.child(path).off(ev, cb));
+            }
+            fbListeners = [];
+        }
+
+        function listenPath(path, ev, cb) {
+            if (!fbRef) return;
+            fbRef.child(path).on(ev, cb);
+            fbListeners.push([path, ev, cb]);
+        }
+
+        function fbCreateRoom(local, isSpectatorHost = false) {
+            const name = readName();
+            if (!name) return;
+            const code = local ? 'SOLO' : genCode();
+            const myId = 'p_' + Math.random().toString(36).slice(2, 8);
+            fbState = { active: true, isHost: true, code, myId, roomId: code, isSpectator: isSpectatorHost };
+            fbRef = rtdb.ref('rooms/' + code);
+
+            const freeEmoji = isSpectatorHost ? "👑" : petsList[0].emoji;
+            const initData = {
+                mode: 'quiz', setKey: 'session1', setLabel: setLabelFor('session1'), botLevel: 'normal', phase: 'lobby', wordIds: [],
+                players: {
+                    [myId]: { id: myId, name, emoji: freeEmoji, isBot: false, isHost: true, isSpectator: isSpectatorHost, progress: 0, score: 0, finishOrder: 0, finishTime: 0, left: false }
+                }
+            };
+            fbRef.set(initData).then(() => {
+                attachRoomListeners();
+                enterLobby();
+            }).catch(err => {
+                setMenuStatus('Lỗi kết nối Firebase: ' + err.message, true);
+                leaveRoom();
+            });
+        }
+
+        function fbJoinRoom() {
+            const name = readName();
+            if (!name) return;
+            const code = $('roomCodeInput').value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+            if (code.length < 4) { setMenuStatus('Nhập mã phòng do chủ phòng gửi cho bạn nhé!', true); $('roomCodeInput').focus(); return; }
+
+            const ref = rtdb.ref('rooms/' + code);
+            ref.once('value', snap => {
+                const val = snap.val();
+                if (!val) { setMenuStatus('Không tìm thấy phòng ' + code + '. Kiểm tra lại mã!', true); return; }
+                if (val.phase !== 'lobby') { setMenuStatus('Phòng đang trong trận đấu, hãy chờ trận sau nhé!', true); return; }
+                const playersCount = val.players ? Object.keys(val.players).length : 0;
+                if (playersCount >= MAX_PLAYERS) { setMenuStatus('Phòng đã đầy (30/30 người)!', true); return; }
+
+                const takenEmojis = val.players ? Object.values(val.players).map(p => p.emoji) : [];
+                const freePet = petsList.find(p => !takenEmojis.includes(p.emoji)) || petsList[0];
+
+                const myId = 'p_' + Math.random().toString(36).slice(2, 8);
+                fbState = { active: true, isHost: false, code, myId, roomId: code, isSpectator: false };
+                fbRef = ref;
+
+                fbRef.child('players/' + myId).set({
+                    id: myId, name, emoji: freePet.emoji, isBot: false, isHost: false, isSpectator: false, progress: 0, score: 0, finishOrder: 0, finishTime: 0, left: false
+                }).then(() => {
+                    attachRoomListeners();
+                    enterLobby();
+                });
+            });
+        }
+
+        function attachRoomListeners() {
+            clearListeners();
+            listenPath('mode', 'value', snap => { if (snap.exists()) { roomData.mode = snap.val(); refreshView(); } });
+            listenPath('setKey', 'value', snap => { if (snap.exists()) { roomData.setKey = snap.val(); roomData.setLabel = setLabelFor(roomData.setKey); refreshView(); } });
+            listenPath('botLevel', 'value', snap => { if (snap.exists()) { roomData.botLevel = snap.val(); refreshView(); } });
+            listenPath('phase', 'value', snap => {
+                if (!snap.exists()) return;
+                const p = snap.val();
+                roomData.phase = p;
+                if (p === 'playing') {
+                    fbRef.child('wordIds').once('value', sWord => {
+                        const wordIds = sWord.val() || [];
+                        beginMatch(roomData.mode, wordIds);
+                    });
+                } else if (p === 'lobby') {
+                    $('leaderboardModal').style.display = 'none';
+                    stopFireworks();
+                    stopEndingAudio();
+                    enterLobby();
+                } else if (p === 'ended') {
+                    fbRef.child('players').once('value', sPlayers => {
+                        if (sPlayers.exists()) {
+                            const plist = Object.values(sPlayers.val()).filter(r => !r.isSpectator).sort(rankCompare);
+                            showResults(plist);
+                        }
+                    });
+                }
+            });
+            listenPath('players', 'value', snap => {
+                roomData.players = snap.val() || {};
+                refreshView();
+            });
+        }
+
+        function leaveRoom() {
+            if (fbState.active && fbRef && fbState.myId) {
+                if (fbState.isHost) {
+                    fbRef.remove().catch(() => {});
+                } else {
+                    fbRef.child('players/' + fbState.myId).remove().catch(() => {});
+                }
+            }
+            clearListeners();
+            fbState = { active: false, isHost: false, code: '', myId: '', roomId: '', isSpectator: false };
+            fbRef = null;
+            stopBots(); stopLocalPlay(); stopFireworks();
+        }
+
+        function backToMenu() {
+            leaveRoom();
+            $('leaderboardModal').style.display = 'none';
+            stopFireworks();
+            stopEndingAudio();
+            showArenaScreen('arenaMenu');
+            setMusic('lobby');
+        }
+        function leaveRoomUI() { backToMenu(); setMenuStatus(''); }
+        window.addEventListener('beforeunload', () => { leaveRoom(); });
+
+        function enterLobby() {
+            stopLocalPlay(); stopFireworks();
+            showArenaScreen('arenaLobby');
+            setMusic('lobby');
+            renderLobby();
+        }
+
+        function fillSelect(sel, pairs, value) {
+            sel.innerHTML = pairs.map(([k, l]) => `<option value="${esc(k)}">${esc(l)}</option>`).join('');
+            sel.value = value;
+        }
+
+        function renderLobby() {
+            if (!fbState.active || arenaScreen !== 'arenaLobby') return;
+            const isHost = fbState.isHost;
+            const plist = playersArray();
+            const hostP = plist.find(p => p.isHost);
+
+            $('lobbyCode').innerText = fbState.code;
+            $('btnCopyCode').style.display = fbState.code === 'SOLO' ? 'none' : 'inline-flex';
+            $('lobbyHint').innerText = fbState.code === 'SOLO' ? 'Chế độ Solo luyện tập cùng Bot.' : (isHost ? 'Gửi mã phòng cho bạn bè để cùng vào!' : `Phòng của chủ phòng ${hostP ? hostP.name : ''}.`);
+            $('lobbyCount').innerText = `${plist.length}/${MAX_PLAYERS}`;
+
+            $('playersListGrid').innerHTML = plist.map(p => `
+                <div class="player-card ${p.id === fbState.myId ? 'is-me' : ''}">
+                    <span class="pc-emoji">${p.emoji}</span>
+                    <div class="pc-info">
+                        <div class="pc-name">${esc(p.name)}${p.id === fbState.myId ? ' (Bạn)' : ''}</div>
+                        <div class="pc-tags">
+                            ${p.isHost ? '<span class="tag tag-host">👑 Chủ phòng</span>' : ''}
+                            ${p.isSpectator ? '<span class="tag tag-admin">👁️ Quản trò</span>' : (p.isBot ? '<span class="tag tag-bot">🤖 Bot</span>' : '<span class="tag tag-ok">✓ Sẵn sàng</span>')}
+                        </div>
+                    </div>
+                    ${isHost && !p.isHost ? `<button class="pc-kick" title="Mời ra" data-kick="${esc(p.id)}">✕</button>` : ''}
+                </div>`).join('');
+
+            ['quiz', 'race'].forEach(m => {
+                const el = $('modeCard-' + m);
+                el.classList.toggle('active', roomData.mode === m);
+                el.classList.toggle('locked', !isHost);
+            });
+            fillSelect($('setSelect'), isHost ? setOptions().map(o => [o.key, o.label]) : [[roomData.setKey, roomData.setLabel]], roomData.setKey);
+            fillSelect($('botSelect'), Object.entries(BOT_LEVELS).map(([k, v]) => [k, v.label]), roomData.botLevel);
+            $('setSelect').disabled = !isHost; $('botSelect').disabled = !isHost;
+
+            $('petSelectCard').style.display = fbState.isSpectator ? 'none' : 'flex';
+
+            const mine = getMyPlayer();
+            const takenEmojis = plist.filter(p => p.id !== fbState.myId).map(p => p.emoji);
+            $('petGrid').innerHTML = petsList.map((pet, idx) => {
+                const taken = takenEmojis.includes(pet.emoji);
+                const sel = mine && mine.emoji === pet.emoji;
+                return `<div class="pet-card ${taken ? 'taken' : ''} ${sel ? 'selected' : ''}" ${taken ? '' : `data-pet="${idx}"`}><div class="pe">${pet.emoji}</div><div class="pn">${pet.name}</div></div>`;
+            }).join('');
+
+            $('btnAddBot').style.display = isHost ? 'inline-flex' : 'none';
+            $('btnAddBot').disabled = plist.length >= MAX_PLAYERS;
+            $('btnStart').style.display = isHost ? 'inline-flex' : 'none';
+            
+            const activeRunnersCount = plist.filter(p => !p.isSpectator).length;
+            $('btnStart').disabled = activeRunnersCount < 1;
+            $('startHint').innerText = (isHost && activeRunnersCount < 1) ? 'Cần ít nhất 1 người chơi thi đấu (Thêm Bot hoặc đợi bạn bè).' : '';
+            $('lobbyWait').style.display = isHost ? 'none' : 'block';
+        }
+
+        $('playersListGrid').addEventListener('click', e => {
+            const b = e.target.closest('[data-kick]');
+            if (b && fbState.isHost) {
+                fbRef.child('players/' + b.dataset.kick).remove();
+            }
+        });
+        $('petGrid').addEventListener('click', e => {
+            const c = e.target.closest('[data-pet]');
+            if (c) {
+                const emoji = petsList[+c.dataset.pet].emoji;
+                if (!playersArray().some(p => p.id !== fbState.myId && p.emoji === emoji)) {
+                    fbRef.child('players/' + fbState.myId + '/emoji').set(emoji);
+                }
+            }
+        });
+
+        function fbSetMode(m) { if (fbState.isHost) fbRef.child('mode').set(m); }
+        function fbSetSet(k) { if (fbState.isHost) { fbRef.child('setKey').set(k); fbRef.child('setLabel').set(setLabelFor(k)); } }
+        function fbSetBot(l) { if (fbState.isHost) fbRef.child('botLevel').set(l); }
+        function fbAddBot() {
+            if (!fbState.isHost) return;
+            const plist = playersArray();
+            if (plist.length >= MAX_PLAYERS) return;
+            const name = botNamesPool.find(n => !plist.some(p => p.name === n)) || ('Bot ' + plist.length);
+            const pet = petsList.find(x => !plist.some(p => p.emoji === x.emoji)) || petsList[0];
+            const botId = 'bot_' + Math.random().toString(36).slice(2, 8);
+            fbRef.child('players/' + botId).set({
+                id: botId, name, emoji: pet.emoji, isBot: true, isHost: false, isSpectator: false, progress: 0, score: 0, finishOrder: 0, finishTime: 0, left: false
+            });
+        }
+        function copyRoomCode() {
+            const code = fbState.code, btn = $('btnCopyCode');
+            const done = () => { btn.innerHTML = '<i class="fa-solid fa-check"></i> Đã sao chép'; setTimeout(() => { btn.innerHTML = '<i class="fa-solid fa-copy"></i> Sao chép mã'; }, 1500); };
+            if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(code).then(done).catch(() => prompt('Sao chép mã phòng:', code));
+        }
+
+        function fbHostStart() {
+            if (!fbState.isHost) return;
+            const plist = playersArray();
+            const activeRunners = plist.filter(p => !p.isSpectator);
+            if (activeRunners.length < 1) return;
+
+            const wordIds = shuffle(wordsForSet(roomData.setKey)).map(w => w.id);
+            const updates = { phase: 'playing', wordIds };
+            plist.forEach(p => {
+                updates[`players/${p.id}/progress`] = 0;
+                updates[`players/${p.id}/score`] = 0;
+                updates[`players/${p.id}/finishOrder`] = 0;
+                updates[`players/${p.id}/finishTime`] = 0;
+            });
+            fbRef.update(updates);
+        }
+
+        function reportProgress() {
+            if (!fbState.active || fbState.isSpectator) return;
+            
+            const isFinished = wordsCompleted >= match.total;
+            const updates = {
+                progress: wordsCompleted,
+                score: score
+            };
+            if (isFinished) {
+                updates.finishOrder = 1;
+            }
+
+            fbRef.child(`players/${fbState.myId}`).update(updates).then(() => {
+                if (isFinished) {
+                    triggerEndMatchForRoom();
+                }
+            });
+            updateLanes();
+        }
+
+        function triggerEndMatchForRoom() {
+            fbRef.child('players').once('value', snap => {
+                if (snap.exists()) {
+                    const activePlayers = Object.values(snap.val()).filter(p => !p.isSpectator);
+                    const ranking = activePlayers.sort(rankCompare);
+                    fbRef.update({ phase: 'ended', ranking });
+                }
+            });
+        }
+
+        function fbHostForceEnd() { if (fbState.isHost && roomData.phase === 'playing') triggerEndMatchForRoom(); }
+
+        function fbHostBackToLobby(rematch) {
+            if (!fbState.isHost) return;
+            const plist = playersArray().filter(p => !p.left);
+            const updates = { phase: 'lobby' };
+            plist.forEach(p => {
+                updates[`players/${p.id}/progress`] = 0;
+                updates[`players/${p.id}/score`] = 0;
+                updates[`players/${p.id}/finishOrder`] = 0;
+                updates[`players/${p.id}/finishTime`] = 0;
+            });
+            fbRef.update(updates).then(() => {
+                if (rematch && plist.filter(p => !p.isSpectator).length >= 1) fbHostStart();
+            });
+        }
+
+        function startBots() {
+            stopBots();
+            if (!fbState.isHost) return;
+            const lv = BOT_LEVELS[roomData.botLevel] || BOT_LEVELS.normal;
+            const mult = roomData.mode === 'quiz' ? 1.8 : 1;
+            botTimer = setInterval(() => {
+                if (roomData.phase !== 'playing') return;
+                const plist = playersArray();
+                let updates = {};
+                let changed = false;
+                let winnerFound = false;
+
+                plist.forEach(b => {
+                    if (!b.isBot || b.finishOrder > 0 || winnerFound) return;
+                    const skill = (lv.lo + Math.random() * (lv.hi - lv.lo)) * mult;
+                    if (Math.random() < skill) {
+                        b.progress = Math.min(match.total, (b.progress || 0) + 1);
+                        b.score = (b.score || 0) + (roomData.mode === 'quiz' ? 10 : 25);
+                        updates[`players/${b.id}/progress`] = b.progress;
+                        updates[`players/${b.id}/score`] = b.score;
+                        changed = true;
+                        
+                        if (b.progress >= match.total) {
+                            b.finishOrder = 1;
+                            updates[`players/${b.id}/finishOrder`] = 1;
+                            winnerFound = true;
+                        }
+                    }
+                });
+                
+                if (changed) {
+                    fbRef.update(updates).then(() => {
+                        if (winnerFound) {
+                            stopBots();
+                            triggerEndMatchForRoom();
+                        }
+                    });
+                }
+            }, 1000);
+        }
+        function stopBots() { if (botTimer) { clearInterval(botTimer); botTimer = null; } }
+
+        function refreshView() {
+            if (arenaScreen === 'arenaLobby') renderLobby();
+            else refreshMatchView();
+        }
+
+        function beginMatch(mode, wordIds) {
+            roomData.mode = mode;
+            match = { words: wordIds.map(id => rawVocabData.find(w => w.id === id)).filter(Boolean), total: 0, running: false, finished: false };
+            match.total = match.words.length;
+            $('leaderboardModal').style.display = 'none';
+            stopFireworks();
+            stopEndingAudio();
+            resetLocalGame();
+
+            if (fbState.isSpectator) {
+                showArenaScreen('arenaAdmin');
+            } else {
+                showArenaScreen(mode === 'race' ? 'arenaRace' : 'arenaQuiz');
+            }
+
+            renderLanes();
+            setMusic('bgm');
+            runCountdown(() => {
+                match.running = true;
+                if (fbState.isHost) startBots();
+                if (!fbState.isSpectator) {
+                    if (mode === 'race') { isGameRunning = true; rafId = requestAnimationFrame(updateGame); }
+                    else startQuiz();
+                }
+            });
+        }
+
+        function runCountdown(done) {
+            let n = 3;
+            const modal = $('countdownModal'), num = $('countdownNum');
+            const show = txt => { num.innerText = txt; num.style.animation = 'none'; void num.offsetHeight; num.style.animation = ''; };
+            modal.style.display = 'flex'; show(n);
+            countdownTimer = setInterval(() => {
+                n--;
+                if (n > 0) show(n);
+                else if (n === 0) show('GO!');
+                else { clearInterval(countdownTimer); countdownTimer = null; modal.style.display = 'none'; done(); }
+            }, 900);
+        }
+
+        function resetLocalGame() {
+            stopLocalPlay();
+            score = 0; wordsCompleted = 0; gameSpeed = 3.8; frameCount = 0; invincibleFrames = 0;
+            hasMushroomBuff = false; floatingTexts = [];
+            $('hud-buff').style.display = 'none';
+            obstacles = []; wordQueue = shuffle(match.words);
+            player.x = 100; player.y = 255; player.velocityY = 0; player.isJumping = false; standPlayer();
+            qz.idx = 0; qz.locked = false;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            $('qz-done').style.display = 'none'; $('qz-body').style.display = 'block';
+            $('qz-time').innerText = '0.0s';
+        }
+
+        function stopLocalPlay() {
+            isGameRunning = false;
+            if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+            if (penaltyTimer) { clearInterval(penaltyTimer); penaltyTimer = null; }
+            if (qz.timer) { clearInterval(qz.timer); qz.timer = null; }
+            if (qz.penaltyTimer) { clearInterval(qz.penaltyTimer); qz.penaltyTimer = null; }
+            if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
+            isPenalized = false; qz.locked = false;
+            ['questionModal', 'leaderboardModal', 'countdownModal'].forEach(id => { const el = $(id); if (el) el.style.display = 'none'; });
+            const qb = $('qz-body'); if (qb) qb.style.pointerEvents = 'auto';
+        }
+
+        function laneBar() { 
+            if (arenaScreen === 'arenaAdmin') return $('laneBarAdmin');
+            return $(roomData.mode === 'race' ? 'laneBarRace' : 'laneBarQuiz'); 
+        }
+
+        function renderLanes() {
+            ['laneBarRace', 'laneBarQuiz', 'laneBarAdmin'].forEach(id => {
+                const el = $(id);
+                if (el) el.querySelectorAll('.race-racer-row').forEach(r => r.remove());
+            });
+            const bar = laneBar();
+            const plist = playersArray().filter(p => !p.isSpectator);
+            const n = Math.max(1, plist.length);
+            const rowH = Math.max(17, Math.min(34, Math.floor(170 / n)));
+            bar.style.height = (n * rowH + 12) + 'px';
+
+            plist.forEach((p, idx) => {
+                const row = document.createElement('div');
+                row.className = 'race-racer-row' + (p.id === fbState.myId ? ' is-me' : '');
+                row.style.top = (6 + idx * rowH) + 'px';
+                row.style.height = rowH + 'px';
+                row.innerHTML = `<div class="race-racer-icon ${p.id === fbState.myId ? 'is-user' : ''}" id="racer-icon-${idx}" style="left:4%;">${p.emoji}<span class="rn">${esc(p.name)}</span></div>`;
+                bar.appendChild(row);
+            });
+            updateLanes();
+        }
+
+        function updateLanes() {
+            const bar = laneBar();
+            const plist = playersArray().filter(p => !p.isSpectator);
+            if (bar.querySelectorAll('.race-racer-row').length !== plist.length) { renderLanes(); return; }
+            const total = match.total || 1;
+            plist.forEach((p, idx) => {
+                const el = $(`racer-icon-${idx}`);
+                if (el) { el.style.left = `${4 + (Math.min(p.progress || 0, total) / total) * 82}%`; el.style.opacity = p.left ? 0.35 : 1; }
+            });
+            updateHud();
+        }
+
+        function refreshMatchView() {
+            updateLanes();
+            if (arenaScreen === 'arenaAdmin') {
+                const plist = playersArray().filter(p => !p.isSpectator).sort(rankCompare);
+                const total = match.total || 1;
+                $('adminPlayerTable').innerHTML = plist.map((p, idx) => {
+                    const pct = Math.min(100, Math.round(((p.progress || 0) / total) * 100));
+                    const isDone = p.progress >= total;
+                    return `
+                        <div class="admin-player-row">
+                            <div style="font-weight:900; font-size:1.1rem; color:var(--fire-gold);">#${idx + 1}</div>
+                            <div style="font-weight:800; font-size:1rem;">${p.emoji} ${esc(p.name)} ${p.isBot ? '🤖' : ''}</div>
+                            <div class="progress-bar-bg">
+                                <div class="progress-bar-fill" style="width: ${pct}%;"></div>
+                            </div>
+                            <div style="font-weight:800; text-align:right; color:${isDone ? 'var(--accent)' : '#FFF'};">
+                                ${isDone ? '🏁 Xong!' : `${p.progress || 0}/${total} (${pct}%)`}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
+
+        function updateHud() {
+            if (fbState.isSpectator) return;
+            const sorted = playersArray().filter(p => !p.isSpectator).sort(rankCompare);
+            const rank = Math.max(1, sorted.findIndex(p => p.id === fbState.myId) + 1);
+            const rankTxt = `#${rank}/${sorted.length}`;
+            $('hud-progress').innerText = `${wordsCompleted} / ${match.total} câu`;
+            $('hud-score').innerText = `${score} đ`;
+            $('hud-rank').innerText = rankTxt;
+            $('qz-score').innerText = `${score} đ`;
+            $('qz-rank').innerText = rankTxt;
+        }
+
+        // ======================= GAME ĐẤU TRÍ =======================
+        function startQuiz() {
+            qz.idx = 0; qz.locked = false; qz.startTs = performance.now();
+            if (qz.timer) clearInterval(qz.timer);
+            qz.timer = setInterval(() => { $('qz-time').innerText = ((performance.now() - qz.startTs) / 1000).toFixed(1) + 's'; }, 100);
+            $('qz-done').style.display = 'none'; $('qz-body').style.display = 'block';
+            quizRender();
+        }
+        function quizRender() {
+            if (match.finished || !match.running) return;
+            const item = match.words[qz.idx];
+            $('qz-count').innerText = `Câu ${qz.idx + 1}/${match.total}`;
+            $('qz-penalty').style.display = 'none';
+            $('qz-mode-tag').innerText = `📝 CÂU HỎI (${item.type})`;
+            $('qz-word').innerText = item.word;
+            buildOptions($('qz-options'), item.meaning, allMeanings(), ok => quizAnswer(ok));
+        }
+        function quizAnswer(ok) {
+            if (!match.running || match.finished || qz.locked) return;
+            if (ok) {
+                score += 10; qz.idx++; wordsCompleted = qz.idx;
+                playSoundFile('clap');
+                const card = $('qz-card');
+                card.classList.add('flash-ok'); setTimeout(() => card.classList.remove('flash-ok'), 350);
+                reportProgress();
+                if (qz.idx < match.total) {
+                    quizRender();
+                }
+            } else { quizWrong(); }
+        }
+        function quizWrong() {
+            qz.locked = true;
+            playSoundFile('laugh');
+            let s = 3;
+            $('qz-penalty').style.display = 'block'; $('qz-penalty-sec').innerText = s;
+            $('qz-body').style.pointerEvents = 'none';
+            qz.penaltyTimer = setInterval(() => {
+                s--;
+                $('qz-penalty-sec').innerText = Math.max(s, 0);
+                if (s <= 0) {
+                    clearInterval(qz.penaltyTimer); qz.penaltyTimer = null;
+                    qz.locked = false;
+                    $('qz-body').style.pointerEvents = 'auto';
+                    quizRender();
+                }
+            }, 1000);
+        }
+
+        // ======================= GAME ĐUA RUNNER =======================
+        window.addEventListener('keydown', (e) => {
+            if (!isGameRunning || isPenalized) return;
+            if (e.code === 'Space' || e.code === 'ArrowUp') {
+                e.preventDefault();
+                if (!player.isJumping) { player.velocityY = -12.5; player.isJumping = true; standPlayer(); }
+            } else if (e.code === 'ArrowDown') {
+                e.preventDefault(); duckPlayer();
+            }
+        });
+        window.addEventListener('keyup', (e) => {
+            if (e.code === 'ArrowDown') standPlayer();
+        });
+
+        function duckPlayer() { if (!player.isDucking) { player.isDucking = true; player.height = 38; player.y = 272; } }
+        function standPlayer() {
+            player.isDucking = false;
+            player.height = player.originalHeight;
+            if (!player.isJumping) player.y = 255;
+        }
+
+        function spawnObstacle() {
+            const rand = Math.random();
+            if (rand < 0.30) {
+                obstacles.push({ x: 1000, y: 220, width: 35, height: 35, emoji: "🍄", type: "item_mushroom" });
+            } else if (rand < 0.60) {
+                obstacles.push({ x: 1000, y: 190, width: 35, height: 35, emoji: "🌟", type: "item_star" });
+            } else if (rand < 0.80) {
+                obstacles.push({ x: 1000, y: 195, width: 40, height: 30, emoji: "🦅", type: "air" });
+            } else {
+                obstacles.push({ x: 1000, y: 260, width: 35, height: 50, emoji: "🌵", type: "ground" });
+            }
+        }
+
+        function updateGame() {
+            if (!isGameRunning) return;
+            frameCount++;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            if (frameCount % 400 === 0 && gameSpeed < 9) gameSpeed += 0.3;
+
+            ctx.fillStyle = "#334155";
+            ctx.fillRect(0, 310, canvas.width, 40);
+            ctx.strokeStyle = "#F59E0B"; ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.moveTo(0, 310); ctx.lineTo(canvas.width, 310); ctx.stroke();
+
+            if (player.isJumping) {
+                if (player.velocityY < 0 && player.velocityY > -4) player.velocityY += player.gravity * 0.5;
+                else player.velocityY += player.gravity;
+            }
+            player.y += player.velocityY;
+            if (player.y >= 255 && !player.isDucking) { player.y = 255; player.velocityY = 0; player.isJumping = false; }
+
+            const mine = getMyPlayer();
+            const blink = invincibleFrames > 0 && Math.floor(frameCount / 6) % 2 === 0;
+            if (!blink && mine) {
+                ctx.fillStyle = hasMushroomBuff ? "#EF4444" : "#F59E0B";
+                ctx.font = "bold 13px 'Plus Jakarta Sans', sans-serif";
+                ctx.textAlign = "center";
+                ctx.fillText((hasMushroomBuff ? "🍄 " : "") + mine.name, player.x + 20, player.y - 8);
+                ctx.font = `${player.isDucking ? '34px' : '42px'} 'Plus Jakarta Sans', sans-serif`;
+                ctx.fillText(mine.emoji, player.x, player.y + (player.isDucking ? 28 : 38));
+            }
+
+            // XỬ LÝ VÀ VẼ HIỆU ỨNG CHỮ NỔI NEON VÀNG BAY LÊN TRÊN ĐẦU CON VẬT
+            for (let i = floatingTexts.length - 1; i >= 0; i--) {
+                let ft = floatingTexts[i];
+                ft.y -= ft.speed;
+                ft.alpha -= 0.02;
+                
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, ft.alpha);
+                ctx.font = "bold 18px 'Plus Jakarta Sans', sans-serif";
+                ctx.fillStyle = "#F59E0B"; // Màu vàng neon
+                ctx.shadowColor = "#F59E0B";
+                ctx.shadowBlur = 12;
+                ctx.textAlign = "center";
+                ctx.fillText(ft.text, ft.x, ft.y);
+                ctx.restore();
+
+                if (ft.alpha <= 0) floatingTexts.splice(i, 1);
+            }
+
+            if (frameCount % Math.max(80, Math.floor(180 - gameSpeed * 8)) === 0) spawnObstacle();
+            if (invincibleFrames > 0) invincibleFrames--;
+
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                const obs = obstacles[i];
+                obs.x -= gameSpeed;
+                ctx.font = "34px 'Plus Jakarta Sans', sans-serif";
+                ctx.textAlign = "center";
+                ctx.fillText(obs.emoji, obs.x, obs.y + 35);
+
+                if (player.x + 8 < obs.x + obs.width - 5 &&
+                    player.x + player.width - 8 > obs.x + 5 &&
+                    player.y < obs.y + obs.height - 5 &&
+                    player.y + player.height > obs.y + 5) {
+                    
+                    if (obs.type === 'item_mushroom') {
+                        obstacles.splice(i, 1);
+                        hasMushroomBuff = true;
+                        playSoundFile('clap');
+                        $('hud-buff').style.display = 'inline-flex';
+                        // HIỆN CHỮ NEON VÀNG BAY LÊN TRÊN ĐẦU
+                        floatingTexts.push({ x: player.x + 20, y: player.y - 15, text: "🍄 X2 ĐIỂM!", speed: 1.2, alpha: 1.0 });
+                        continue;
+                    } else if (obs.type === 'item_star') {
+                        obstacles.splice(i, 1);
+                        score += 50;
+                        playSoundFile('clap');
+                        reportProgress();
+                        // HIỆN CHỮ NEON VÀNG BAY LÊN TRÊN ĐẦU
+                        floatingTexts.push({ x: player.x + 20, y: player.y - 15, text: "+50 ĐIỂM 🌟", speed: 1.2, alpha: 1.0 });
+                        continue;
+                    } else if (invincibleFrames <= 0) {
+                        obstacles.splice(i, 1);
+                        triggerCollisionQuestion();
+                        return;
+                    }
+                }
+                if (obs.x < -50) obstacles.splice(i, 1);
+            }
+            rafId = requestAnimationFrame(updateGame);
+        }
+
+        function nextQuestionWord() {
+            if (wordQueue.length === 0) wordQueue = shuffle(match.words);
+            return wordQueue.shift();
+        }
+
+        function triggerCollisionQuestion() {
+            isGameRunning = false;
+            if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+            standPlayer();
+            qWordObj = nextQuestionWord();
+            $('penalty-notice').style.display = 'none';
+            $('q-quiz-view').style.pointerEvents = 'auto';
+            $('questionModal').style.display = 'flex';
+            renderQuestionStep();
+        }
+
+        function renderQuestionStep() {
+            const buffText = hasMushroomBuff ? " [🍄 X2 ĐIỂM]" : "";
+            $('q-step-tag').innerText = `CÂU HỎI CẤP CỨU${buffText}`;
+            $('q-word-title').innerText = qWordObj.word;
+            buildOptions($('q-quiz-options'), qWordObj.meaning, allMeanings(), ok => checkQQuizAnswer(ok));
+        }
+
+        function checkQQuizAnswer(ok) {
+            if (isPenalized) return;
+            if (ok) {
+                const addScore = hasMushroomBuff ? 20 : 10;
+                score += addScore; wordsCompleted++;
+                if (hasMushroomBuff) {
+                    hasMushroomBuff = false;
+                    $('hud-buff').style.display = 'none';
+                }
+                playSoundFile('clap');
+                $('questionModal').style.display = 'none';
+                reportProgress();
+                
+                if (wordsCompleted < match.total) {
+                    player.x += 15;
+                    invincibleFrames = 90;
+                    isGameRunning = true;
+                    rafId = requestAnimationFrame(updateGame);
+                }
+            } else { handleWrongAnswerPenalty(); }
+        }
+
+        function handleWrongAnswerPenalty() {
+            if (isPenalized) return;
+            isPenalized = true;
+            playSoundFile('laugh');
+            let secondsLeft = 5;
+            $('penalty-notice').style.display = 'block';
+            $('countdownTimer').innerText = secondsLeft;
+            $('q-quiz-view').style.pointerEvents = 'none';
+            wordQueue.push(qWordObj);
+
+            penaltyTimer = setInterval(() => {
+                secondsLeft--;
+                $('countdownTimer').innerText = Math.max(secondsLeft, 0);
+                if (secondsLeft <= 0) {
+                    clearInterval(penaltyTimer); penaltyTimer = null;
+                    isPenalized = false;
+                    $('q-quiz-view').style.pointerEvents = 'auto';
+                    $('penalty-notice').style.display = 'none';
+                    qWordObj = nextQuestionWord();
+                    renderQuestionStep();
+                }
+            }, 1000);
+        }
+
+        // ======================= BẢNG TỔNG KẾT & PHÁO HOA CHÚC MỪNG =======================
+        function showResults(ranking) {
+            stopLocalPlay();
+            match.running = false;
+            setMusic(null);
+
+            const activeRanking = ranking.filter(r => !r.isSpectator);
+            const rank = activeRanking.findIndex(r => r.id === fbState.myId) + 1;
+            const medals = ['🥇 Top 1', '🥈 Top 2', '🥉 Top 3'];
+
+            startFireworks();
+
+            if (fbState.isSpectator) {
+                $('rankBadgeIcon').innerText = "👑📊";
+                $('rankSubtitleText').innerText = "TRẬN ĐẤU KẾT THÚC CỰC KỲ SÔI NỔI!";
+                playEnding('win');
+            } else if (rank === 1) {
+                $('rankBadgeIcon').innerText = "🥇🏆";
+                $('rankSubtitleText').innerText = "CHAMPION! BẠN LÀ SỐ MỘT!";
+                playEnding('win'); // TOP 1 PHÁT NHẠC WIN
+            } else if (rank === 2 || rank === 3) {
+                $('rankBadgeIcon').innerText = "🥈🔥";
+                $('rankSubtitleText').innerText = `QUÁ ĐỈNH! BẠN ĐẠT HẠNG #${rank}!`;
+                playEnding('normal'); // TOP 2 & 3 PHÁT NHẠC NORMAL
+            } else {
+                $('rankBadgeIcon').innerText = "👏✨";
+                $('rankSubtitleText').innerText = `BẠN ĐẠT HẠNG #${rank} - CỐ GẮNG HƠN LẦN SAU NHÉ!`;
+                playEnding('skibidi'); // CÁC TOP CÒN LẠI PHÁT NHẠC SKIBIDI
+            }
+
+            $('rankModeLine').innerText = `${MODE_NAMES[roomData.mode] || ''} · ${roomData.setLabel || ''}`;
+            $('rankList').innerHTML = activeRanking.map((p, i) => {
+                const topClass = i === 0 ? 'top1' : (i === 1 ? 'top2' : (i === 2 ? 'top3' : ''));
+                const medalTag = medals[i] || `#${i + 1}`;
+                return `
+                    <div class="rank-item ${topClass} ${p.id === fbState.myId ? 'me' : ''}">
+                        <div style="font-weight:900; text-align:left; font-size:1.05rem;">
+                            ${medalTag} <span style="font-size:1.6rem; margin: 0 4px;">${p.emoji}</span> <b>${esc(p.name)}</b>${p.id === fbState.myId ? ' (Bạn)' : ''}${p.isBot ? ' 🤖' : ''}
+                        </div>
+                        <div class="rank-stats">${p.progress || 0}/${match.total} câu · <b>${p.score || 0}đ</b></div>
+                    </div>`;
+            }).join('');
+
+            $('resHostBtns').style.display = fbState.isHost ? 'flex' : 'none';
+            $('resGuestBtns').style.display = fbState.isHost ? 'none' : 'block';
+            $('leaderboardModal').style.display = 'flex';
+        }
+
+        function initArena() {
+            ['questionModal', 'leaderboardModal', 'countdownModal'].forEach(id => { $(id).style.display = 'none'; });
+            try { const saved = localStorage.getItem('trs6_player_name'); if (saved && !$('playerNameInput').value) $('playerNameInput').value = saved; } catch (e) {}
+            showArenaScreen('arenaMenu');
+            setMusic('lobby');
+            setMenuStatus('');
+        }
+
+        $('roomCodeInput').addEventListener('keypress', e => { if (e.key === 'Enter') fbJoinRoom(); });
+        $('roomCodeInput').addEventListener('input', e => { e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''); });
+
+        initArena();
+    </script>
+</body>
+</html>
